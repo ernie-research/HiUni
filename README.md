@@ -24,10 +24,10 @@ HiUni shares the same visual encoder and dense backbone across understanding, ge
 ## ✨ Highlights
 
 - **One Shared Visual Space** for understanding, generation and editing, with only the output heads task-specific.
-- **Strong Understanding** retained under joint training, on par with an understanding-only model of the same architecture.
+- **Strong Understanding** on par with an understanding-only model of the same architecture.
 - **VAE-Free Pixel Generation** up to 2048², with HiGate supplying the fine spatial detail lost in patch merging.
 - **Small Model** with a 4B backbone and only 0.9B generation-specific parameters.
-- **One Checkpoint** for image understanding, generation and editing.
+
 
 ## 📰 News
 
