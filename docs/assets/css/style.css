@@ -52,10 +52,9 @@ code{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:.88em;backgro
 
 /* nav */
 .nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);background:var(--nav-bg);border-bottom:1px solid var(--line)}
-.nav-inner{max-width:var(--maxw);margin:0 auto;padding:8px 28px;display:flex;align-items:center;justify-content:space-between}
+.nav-inner{max-width:var(--maxw);margin:0 auto;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
 .nav-identity{display:flex;align-items:center;gap:12px}
-.nav-brand{display:flex;align-items:center;color:var(--ink)}
-.nav-brand-logo{display:block;width:112px;height:auto}
+.nav-brand{display:flex;align-items:center;color:var(--ink);font-size:15px;font-weight:600}
 .nav-links{display:flex;align-items:center;gap:24px}
 .nav-links a{color:var(--text-2);font-size:14px;font-weight:500}
 .nav-links a:hover{color:var(--ink)}
@@ -373,6 +372,5 @@ footer{border-top:1px solid var(--line);padding:32px 28px;text-align:center;colo
 }
 @media (max-width:520px){
   .nav-inner{padding-left:18px;padding-right:18px}
-  .nav-brand-logo{width:96px}
   .masonry,.edit-grid{gap:4px}
 }
