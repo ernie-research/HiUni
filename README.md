@@ -233,4 +233,4 @@ checkpoint. To export a trained checkpoint to HF format, see
 
 ## 📄 Acknowledgements
 
-We thank the [Qwen3-VL](https://github.com/QwenLM/Qwen3-VL), Megatron-Bridge, Megatron-LM, NeMo and FlashMask teams.
+We thank the [Qwen3-VL](https://github.com/QwenLM/Qwen3-VL), [Megatron-Bridge](https://github.com/NVIDIA-NeMo/Megatron-Bridge), [Megatron-LM](https://github.com/NVIDIA/Megatron-LM), [NeMo](https://github.com/NVIDIA-NeMo) and [FlashMask](https://github.com/PaddlePaddle/FlashMask) teams.
