@@ -1,0 +1,13 @@
+__module__: megatron.energon
+__class__: MetadatasetV2
+
+splits:
+  train:
+    blend:
+      #### 纯文数据 ####
+      - weight: 1.0
+        path: ./output/test_wds_text
+  val:
+    path: ./output/test_wds_text
+  test:
+    path: ./output/test_wds_text

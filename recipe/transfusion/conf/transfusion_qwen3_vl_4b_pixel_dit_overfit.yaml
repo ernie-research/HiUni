@@ -1,0 +1,122 @@
+# ============================================================================
+# Pixel-DiT 过拟合验证配置
+# ============================================================================
+# ViT conditioning + pixel-space noise + x0-loss with the dense diffusion head.
+# 换成通用多层 ModulatedAttentionBlock (diffusion_head.py) + pixel_proj + HiGate 门控注入。
+# 详见 model/transfusion/transfusion_qwen3vl_model.py 的 Dense Pixel-DiT 路径。
+#
+# 本配置仅验证纯 T2I 生成流的 forward/backward 正确性 (过拟合 100 张图), 不含
+# The ViT remains trainable when configured for joint generation.
+# ============================================================================
+
+train:
+  train_iters: 3000
+  global_batch_size: 16
+  micro_batch_size: 1
+  eval_iters: 0
+  eval_interval: 1000000
+
+optimizer:
+  lr: 0.0001
+  min_lr: 0.0001
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  weight_decay: 0.0
+  adam_eps: 1e-8
+
+scheduler:
+  lr_warmup_iters: 10
+  lr_decay_style: cosine
+
+scheduler_config:
+  shift: 1.0
+  timestep_sampling: "shift_logit_norm"
+  logit_norm_mu: 0.8   # = -P_mean，对齐 SenseNova (P_mean=-0.8, noise 占比偏高)
+  logit_norm_sigma: 0.8
+  use_loss_reweight: false
+  use_dynamic_noise_scale: true
+  dynamic_noise_ref_tokens: 256
+  dynamic_noise_base_scale: 1.0
+
+checkpoint:
+  save: ./output/pixel_dit_overfit_0709_no_adaln_torch_SenseShift_gate_predx
+  pretrained_checkpoint: checkpoints-megatron/Qwen/Qwen3-VL-4B-Instruct
+  save_interval: 1000
+  dist_ckpt_strictness: "ignore_all"
+  ckpt_convert_format: "float32"
+  ckpt_convert_save: true
+
+dist:
+  use_megatron_fsdp: false
+  use_torch_fsdp2: false
+
+logger:
+  log_interval: 1
+  log_throughput: true
+  tensorboard_dir: ./output/tb/pixel_dit_overfit_0709_no_adaln_torch_SenseShift_gate_predx
+  log_timers_to_tensorboard: true
+  log_memory_to_tensorboard: true
+  log_throughput_to_tensorboard: true
+  log_l2_norm_grad_to_tensorboard: true
+  throughput_window_size: 10
+
+dataset:
+  seq_length: 4096
+  global_batch_size: 16
+  micro_batch_size: 1
+  packing_buffer_size: 50
+  num_workers: 4
+  # 纯生成流验证: 单一数据源 (与 run_transfusion_pretrain.sh 的 DATA_PATH 惯例一致,
+  # 也可以在启动时用 dataset.path=<...> CLI 覆盖)
+  path: ./output/test_wds_t2i_100
+
+# ============================================================================
+# Transfusion 专属配置: Pixel-DiT 模式
+# ============================================================================
+transfusion:
+  # pixel-space diffusion
+  predict_x0: true
+  # Optional: 解冻 ViT 时可单独设置 vision tower LR；不设置则跟随 optimizer.lr。
+  # vit_lr: 1e-5
+  # vit_min_lr: 1e-5
+  dit_block_adaln: false
+  # Pixel-DiT 训练时 ViT 参与生成路径，开启 ViT activation checkpointing。
+  vit_recompute: true
+  # Pixel-DiT 多层 head activation checkpointing，节省 head 激活显存。
+  diffusion_head_recompute: true
+  # DiT head 层数 (>0 必需) + Gate 注入层 (0-based)
+  num_diffusion_layers: 10
+  pixel_dit_gate_inject_layer: 3
+  # Edit ref pixel gate ablation: none | shared | separate
+  pixel_dit_ref_gate_mode: "none"
+  # DiT head 实现: "torch" 原生 (默认) / "megatron" TE+FP8
+  dit_head_impl: "torch"
+  edit_diff_loss_weight: 1.0  # editing diffusion loss 独立权重；T2I 使用 diff_loss_weight
+
+  # 生成分辨率
+  gen_min_pixels: 65536
+  gen_max_pixels: 65536
+  cfg_drop_rate: 0.1
+  cfg_keep_chat_template: false  # false: T2I/edit-full CFG 使用纯 image-only uncond
+  hf_path: ./checkpoints/Qwen3-VL-4B-Instruct
+
+model:
+  freeze_language_model: false
+  use_flashmask: true
+  # Pixel-DiT uses the ViT conditioning path for generation.
+  freeze_vision_model: true
+  freeze_vision_projection: true
+  recompute_granularity: full
+  recompute_method: uniform
+  recompute_num_layers: 2
+
+rng:
+  seed: 42
+
+ddp:
+  grad_reduce_in_fp32: true
+  data_parallel_sharding_strategy: optim_grads
+  overlap_grad_reduce: false
+  overlap_param_gather: true
+
+mixed_precision: "bf16_with_fp8_current_scaling_mixed"

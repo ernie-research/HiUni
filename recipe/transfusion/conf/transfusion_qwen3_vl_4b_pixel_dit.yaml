@@ -1,0 +1,159 @@
+# ============================================================================
+# Pixel-DiT 过拟合验证配置
+# ============================================================================
+# ViT conditioning + pixel-space noise + x0-loss with the dense diffusion head.
+# 换成通用多层 ModulatedAttentionBlock (diffusion_head.py) + pixel_proj + HiGate 门控注入。
+# 详见 model/transfusion/transfusion_qwen3vl_model.py 的 Dense Pixel-DiT 路径。
+#
+# 本配置仅验证纯 T2I 生成流的 forward/backward 正确性 (过拟合 100 张图), 不含
+# The ViT remains trainable when configured for joint generation.
+# ============================================================================
+
+train:
+  train_iters: 8192
+  global_batch_size: 16
+  micro_batch_size: 1
+  eval_iters: 0
+  eval_interval: 1000000
+
+optimizer:
+  lr: 0.0001
+  min_lr: 0.0001
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  weight_decay: 0.0
+  adam_eps: 1e-8
+
+scheduler:
+  lr_warmup_iters: 10
+  lr_decay_style: cosine
+
+scheduler_config:
+  shift: 1.0
+  timestep_sampling: "shift_logit_norm"
+  logit_norm_sigma: 1.0
+  use_loss_reweight: false
+  use_dynamic_noise_scale: true
+  dynamic_noise_ref_tokens: 256
+  dynamic_noise_base_scale: 1.0
+
+checkpoint:
+  save: ./output/pixel_dit_0709
+  pretrained_checkpoint: checkpoints-megatron/Qwen/Qwen3-VL-4B-Instruct
+  save_interval: 1000
+  dist_ckpt_strictness: "ignore_all"
+  ckpt_convert_format: "float32"
+  ckpt_convert_save: true
+
+dist:
+  use_megatron_fsdp: false
+  use_torch_fsdp2: false
+
+logger:
+  log_interval: 1
+  log_throughput: true
+  tensorboard_dir: ./output/tb/pixel_dit_0709
+  log_timers_to_tensorboard: true
+  log_memory_to_tensorboard: true
+  log_throughput_to_tensorboard: true
+  log_l2_norm_grad_to_tensorboard: true
+  throughput_window_size: 10
+
+dataset:
+  seq_length: 8192
+  global_batch_size: 16
+  micro_batch_size: 1
+  packing_buffer_size: 10
+  num_workers: 2
+  # 为空时从 dataloader_save 恢复；配置旧目录时可读旧 state、写新 state。
+  dataloader_load: null
+  dataloader_save: ./output/pixel_dit_0709
+  dataloader_reset_streams:
+    - generation
+
+# ============================================================================
+# Transfusion 专属配置: Pixel-DiT 模式
+# ============================================================================
+transfusion:
+  # pixel-space diffusion
+  diffusion_loss_type: "v-loss"  # "v-loss" | "x-loss"
+  # "per_image_token" balances images with different token counts;
+  # "per_token" weights every valid image token equally; "auto" keeps legacy mode.
+  diffusion_loss_reduction: "auto"
+  dit_block_adaln: false
+  # Pixel-DiT 训练时 ViT 参与生成路径，开启 ViT activation checkpointing。
+  vit_recompute: true
+  # Pixel-DiT 多层 head activation checkpointing，节省 head 激活显存。
+  diffusion_head_recompute: true
+  # DiT head 层数 (>0 必需) + Gate 注入层 (0-based)
+  num_diffusion_layers: 10
+  # 冻结 Pixel-DiT 尾部 N 个 transformer block（包含 attention/norm/AdaLN/MLP）；0=不冻结
+  freeze_pixel_dit_last_n_layers: 0
+  # 是否冻结最终输出层 diffusion_head_b；可与上面的尾部 block 冻结同时开启
+  freeze_pixel_dit_final_layer: false
+  pixel_dit_gate_inject_layer: 3
+  # HiGate high-info: "pixel"=merged noisy pixels; "vit"=post-merger ViT feat.
+  pixel_dit_gate_input: "pixel"
+  use_pixel_dit_pixel_residual: true
+  # Edit ref pixel gate ablation: none | shared | separate
+  pixel_dit_ref_gate_mode: "none"
+  # DiT head 实现: "torch" 原生 (默认) / "megatron" TE+FP8
+  dit_head_impl: "torch"
+  edit_diff_loss_weight: 1.0  # editing diffusion loss 独立权重；T2I 使用 diff_loss_weight
+
+  # 生成分辨率
+  gen_min_pixels: 65536
+  gen_max_pixels: 65536
+  # 可选面积分档: 原图面积 < 下一档面积 * threshold 时落到当前档。
+  # 例如 [1024, 2048] + threshold=0.95: 低于 2048^2*0.95 的图走 1024 档，
+  # 更大的图走 2048 档；保持宽高比，方图输出为 1024x1024 / 2048x2048。
+  # gen_resolution_buckets: [1024, 2048]
+  # edit_resolution_buckets: [1024, 2048]
+  # resolution_bucket_threshold: 0.95
+  und_min_pixels: 262144      # 理解: 最小 ~512*512
+  und_max_pixels: 4194304    # 理解: 最大 2048*2048
+  cfg_drop_rate: 0.1
+  cfg_keep_chat_template: false  # false: T2I/edit-full CFG 使用纯 image-only uncond
+  predict_gate_mode: false  # true: 训练 text/image gate；false: 保持旧的无 gate 序列
+  hf_path: ./checkpoints/Qwen3-VL-4B-Instruct
+
+  # --------------------------------------------------------------------------
+  # Batch 调度（多模态 round-robin）
+  # --------------------------------------------------------------------------
+  # 每个 key 表示一种模态，value 表示每轮调度中该模态的 micro-batch 数量
+  batch_schedule:
+    text: 2                           # 纯文本
+    understanding: 5                 # 图像理解
+    generation: 9                    # 图像生成
+  batch_schedule_strict: false        # false=允许某流数据不足时跳过
+
+  # --------------------------------------------------------------------------
+  # 多流数据配置（每种模态独立数据 pipeline）
+  # --------------------------------------------------------------------------
+  # 每个 key 对应 batch_schedule 中的模态名，value 指向 MetadatasetV2 YAML
+  data_streams:
+    text: recipe/transfusion/probs/test_text.yaml
+    understanding: recipe/transfusion/probs/test_i2t.yaml
+    generation: recipe/transfusion/probs/test_t2i.yaml
+
+
+model:
+  freeze_language_model: false
+  use_flashmask: true
+  # Pixel-DiT uses the ViT conditioning path for generation.
+  freeze_vision_model: true
+  freeze_vision_projection: true
+  recompute_granularity: full
+  recompute_method: uniform
+  recompute_num_layers: 2
+
+rng:
+  seed: 42
+
+ddp:
+  grad_reduce_in_fp32: true
+  data_parallel_sharding_strategy: optim_grads
+  overlap_grad_reduce: false
+  overlap_param_gather: true
+
+mixed_precision: "bf16_with_fp8_current_scaling_mixed"

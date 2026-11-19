@@ -1,0 +1,45 @@
+# Python packages for Megatron training and inference (recipe/transfusion/).
+#
+# Use this on top of the NVIDIA NeMo Framework container nvcr.io/nvidia/nemo:25.11,
+# which is built on PyTorch 25.09 (torch 2.9, CUDA 13.0, Transformer Engine 2.9).
+# The container already provides torch, torchvision, transformer-engine, apex and
+# flash-attn. They are CUDA builds and are deliberately not listed here.
+# Megatron-Bridge and Megatron-LM come from 3rdparty/ through PYTHONPATH (see README.md).
+# FlashMask (github.com/PaddlePaddle/FlashMask) is required on the Megatron path. It is
+# installed from source by recipe/transfusion/build_env.sh, which also pulls in
+# nvidia-cutlass, nvidia-cutlass-dsl[cu13]==4.5.2 and apache-tvm-ffi.
+#
+# Versions are the ones verified in that container.
+# Install with pip. uv does not accept the container's torch build (2.9.0a0+...nv25.09)
+# as satisfying the torch requirement and replaces it with a PyPI torch.
+
+transformers==4.57.1
+tokenizers==0.22.1
+accelerate==1.12.0
+safetensors==0.7.0
+huggingface-hub==0.36.0
+
+megatron-energon==5.2.0
+webdataset==0.2.86
+datasets==3.1.0
+
+omegaconf==2.3.0
+hydra-core==1.3.2
+PyYAML==6.0.3
+Jinja2==3.1.6
+einops==0.8.1
+numpy==1.26.4
+scipy==1.16.3
+pandas==2.2.3
+Pillow==11.3.0
+requests==2.32.5
+tqdm==4.67.1
+rich==14.2.0
+six==1.17.0
+regex==2025.11.3
+typing_extensions==4.15.0
+tensorboard==2.20.0
+wandb==0.23.0
+
+# Optional:
+#   matplotlib==3.10.7       diagnostic plots during training

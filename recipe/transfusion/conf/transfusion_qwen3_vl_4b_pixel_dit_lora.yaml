@@ -1,0 +1,179 @@
+# LoRA fine-tuning from the released Pixel-DiT Megatron checkpoint.
+#
+# The `lora:` section configures each component on its own:
+#   backbone  - Qwen3-VL language model decoder (+ time_token)
+#   pixel_dit - Pixel-DiT head (diffusion_head_a/b, gates, pixel_proj, time embeddings)
+#   vit       - vision encoder
+# Per component: enabled, dim (rank), alpha, dropout, dropout_position, target_modules,
+# layers (global 0-based indices of that component's layer stack, e.g. "0-17" or [0, 2]) and
+# trainable_modules (trained in full, no LoRA). Everything not selected is frozen.
+# Override from the command line with e.g. lora.pixel_dit.dim=64 lora.backbone.enabled=false.
+#
+# Launch:
+#   CONFIG_FILE=recipe/transfusion/conf/transfusion_qwen3_vl_4b_pixel_dit_lora.yaml \
+#       bash recipe/transfusion/run_transfusion_pretrain.sh
+#
+# Checkpoints under checkpoint.save hold the adapters (and trainable_modules) only, plus the
+# optimizer state; restarts resume from them. Merge them into the base weights for inference
+# or HF export:
+#   python recipe/transfusion/scripts/merge_lora_checkpoint.py \
+#       --base checkpoints/pixel_dit_megatron --lora output/pixel_dit_lora \
+#       --output output/pixel_dit_lora_merged
+
+lora:
+  backbone:
+    enabled: true
+    dim: 16
+    alpha: 32
+    dropout: 0.0
+    target_modules: [linear_qkv, linear_proj, linear_fc1, linear_fc2]
+    layers: null                       # all 36 decoder layers
+  pixel_dit:
+    enabled: true
+    dim: 64
+    alpha: 64
+    dropout: 0.0
+    target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+    layers: null                       # all 10 Pixel-DiT layers
+    # The pixel output layer is small; train it in full.
+    trainable_modules: [diffusion_head_b, pixel_proj]
+  vit:
+    enabled: false
+
+train:
+  train_iters: 2000
+  global_batch_size: 256
+  micro_batch_size: 2
+  eval_iters: 0
+  eval_interval: 1000000
+
+# LoRA adapters start at zero and take a higher lr than full fine-tuning.
+optimizer:
+  lr: 0.0001
+  min_lr: 0.00001
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  weight_decay: 0.0
+  adam_eps: 1e-8
+  clip_grad: 1.0
+
+scheduler:
+  lr_warmup_iters: 100
+  lr_decay_style: cosine
+
+# Flow-matching timestep sampling. Dynamic noise scaling matches the released HF config
+# (dynamic_noise_ref_tokens 256, base scale 1.0); inference reads the same values.
+scheduler_config:
+  shift: 1.0
+  timestep_sampling: shift_uniform
+  logit_norm_sigma: 1.0
+  use_loss_reweight: false
+  use_dynamic_noise_scale: true
+  dynamic_noise_ref_tokens: 256
+  dynamic_noise_base_scale: 1.0
+
+checkpoint:
+  pretrained_checkpoint: ./checkpoints/pixel_dit_megatron
+  load: ./output/pixel_dit_lora
+  save: ./output/pixel_dit_lora
+  save_interval: 500
+  dist_ckpt_strictness: log_all
+
+dist:
+  use_megatron_fsdp: false
+  use_torch_fsdp2: false
+  distributed_timeout_minutes: 60
+
+logger:
+  log_interval: 1
+  log_throughput: true
+  tensorboard_dir: ./output/tb/pixel_dit_lora
+  log_timers_to_tensorboard: true
+  log_memory_to_tensorboard: true
+  log_throughput_to_tensorboard: true
+  log_l2_norm_grad_to_tensorboard: true
+  throughput_window_size: 10
+
+dataset:
+  seq_length: 9216
+  global_batch_size: 256
+  micro_batch_size: 2
+  packing_buffer_size: 64
+  num_workers: 4
+  dataloader_save: ./output/pixel_dit_lora-dataloader
+
+transfusion:
+  # Base Qwen3-VL-4B-Instruct: supplies the LM/ViT configs and the tokenizer.
+  hf_path: ./checkpoints/Qwen3-VL-4B-Instruct
+  seq_length: 9216
+  train_iters: 2000
+  global_batch_size: 256
+  micro_batch_size: 2
+
+  # ---- Architecture: must match the checkpoint ----
+  num_diffusion_layers: 10
+  num_diffusion_heads: 0              # 0 = inherit from the LM
+  num_diffusion_kv_heads: 0
+  pixel_dit_hidden_size: 0
+  diffusion_intermediate_size: 0
+  pixel_dit_gate_input: pixel
+  pixel_dit_gate_inject_layer: 3
+  pixel_dit_ref_gate_mode: shared
+  use_pixel_dit_pixel_residual: true
+  dit_head_impl: torch
+  dit_block_adaln: false
+  adaln_post_modulation: false
+
+  # ---- Objective ----
+  predict_x0: true
+  diffusion_loss_type: v-loss
+  diffusion_loss_reduction: auto
+  diff_loss_weight: 1.0
+  edit_diff_loss_weight: 1.0
+  cfg_drop_rate: 0.1
+
+  # ---- Memory ----
+  diffusion_head_recompute: true
+  vit_recompute: true
+
+  # ---- Image resolution ----
+  gen_min_pixels: 262144              # 512x512
+  gen_max_pixels: 4194304             # 2048x2048
+  und_min_pixels: 262144
+  und_max_pixels: 4194304
+
+  # ---- Data: one Energon pipeline per modality ----
+  # Samples per global batch for each stream; the values must sum to global_batch_size.
+  batch_schedule:
+    text: 32
+    understanding: 64
+    generation: 160
+  batch_schedule_strict: true
+  data_streams:
+    text: ./recipe/transfusion/probs/test_text.yaml
+    understanding: ./recipe/transfusion/probs/test_i2t.yaml
+    generation: ./recipe/transfusion/probs/test_t2i.yaml
+
+model:
+  # Keep these false: the lora section at the top decides what trains.
+  freeze_language_model: false
+  freeze_vision_model: false
+  freeze_vision_projection: false
+  freeze_dit_param: false
+  freeze_pixel_proj_param: false
+  freeze_pixel_dit_gate_param: false
+  use_flashmask: true
+  recompute_granularity: full
+  recompute_method: uniform
+  recompute_num_layers: 1
+
+rng:
+  seed: 42
+
+ddp:
+  grad_reduce_in_fp32: true
+  data_parallel_sharding_strategy: optim_grads
+  overlap_grad_reduce: false
+  overlap_param_gather: true
+
+mixed_precision: bf16_with_fp8_current_scaling_mixed

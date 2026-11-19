@@ -1,0 +1,132 @@
+# Pixel-DiT backbone ablation: Qwen3-VL-2B dense.
+#
+# All three ablation configs keep the same Pixel-DiT head, data schedule and
+# optimizer. Only the backbone/provider and initialization checkpoint differ.
+
+train:
+  train_iters: 8192
+  global_batch_size: 32
+  micro_batch_size: 1
+  eval_iters: 0
+  eval_interval: 1000000
+
+optimizer:
+  lr: 0.0001
+  min_lr: 0.0001
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  weight_decay: 0.0
+  adam_eps: 1e-8
+
+scheduler:
+  lr_warmup_iters: 10
+  lr_decay_style: cosine
+
+scheduler_config:
+  shift: 1.0
+  timestep_sampling: "shift_logit_norm"
+  logit_norm_sigma: 1.0
+  use_loss_reweight: false
+  use_dynamic_noise_scale: true
+  dynamic_noise_ref_tokens: 256
+  dynamic_noise_base_scale: 1.0
+
+checkpoint:
+  save: ./output/ablation_qwen3vl_2b_pixel_dit_dense
+  pretrained_checkpoint: checkpoints-megatron/Qwen/Qwen3-VL-2B-Instruct
+  save_interval: 1000
+  dist_ckpt_strictness: "ignore_all"
+  ckpt_convert_format: "float32"
+  ckpt_convert_save: true
+
+dist:
+  use_megatron_fsdp: false
+  use_torch_fsdp2: false
+
+logger:
+  log_interval: 1
+  log_throughput: true
+  tensorboard_dir: ./output/tb/ablation_qwen3vl_2b_pixel_dit_dense
+  log_timers_to_tensorboard: true
+  log_memory_to_tensorboard: true
+  log_throughput_to_tensorboard: true
+  log_l2_norm_grad_to_tensorboard: true
+  throughput_window_size: 10
+
+dataset:
+  seq_length: 8192
+  global_batch_size: 32
+  micro_batch_size: 1
+  packing_buffer_size: 10
+  num_workers: 2
+  dataloader_load: null
+  dataloader_save: ./output/ablation_qwen3vl_2b_pixel_dit_dense
+  dataloader_reset_streams:
+    - text
+    - understanding
+    - generation
+
+transfusion:
+  tensor_parallelism: 2
+  use_megatron_fsdp: false
+
+  predict_x0: true
+
+  num_diffusion_layers: 10
+  pixel_dit_hidden_size: 2048
+  num_diffusion_heads: 16
+  num_diffusion_kv_heads: 8
+  diffusion_intermediate_size: 6144
+  diffusion_head_recompute: true
+  pixel_dit_gate_inject_layer: 3
+  use_pixel_dit_pixel_residual: true
+  pixel_dit_ref_gate_mode: "none"
+  dit_head_impl: "torch"
+  adaln_post_modulation: false
+  dit_block_adaln: false
+  vit_recompute: true
+
+  gen_min_pixels: 65536
+  gen_max_pixels: 65536
+  # 可选面积分档，生成/编辑可分别配置，例如 [1024, 2048]。
+  # gen_resolution_buckets: [1024, 2048]
+  # edit_resolution_buckets: [1024, 2048]
+  # resolution_bucket_threshold: 0.95
+  und_min_pixels: 262144
+  und_max_pixels: 4194304
+  cfg_drop_rate: 0.1
+  cfg_keep_chat_template: false
+  predict_gate_mode: false  # false 可关闭 text/image gate token 的插入与 CE 监督
+  edit_diff_loss_weight: 1.0
+  hf_path: ./checkpoints/Qwen3-VL-2B-Instruct
+
+  batch_schedule:
+    text: 1
+    understanding: 3
+    generation: 6
+  batch_schedule_strict: false
+
+  data_streams:
+    text: recipe/transfusion/probs/test_text.yaml
+    understanding: recipe/transfusion/probs/test_i2t.yaml
+    generation: recipe/transfusion/probs/test_t2i.yaml
+
+model:
+  freeze_language_model: false
+  use_flashmask: true
+  freeze_vision_model: true
+  freeze_vision_projection: true
+  recompute_granularity: full
+  recompute_method: uniform
+  recompute_num_layers: 2
+
+rng:
+  seed: 42
+
+ddp:
+  grad_reduce_in_fp32: true
+  data_parallel_sharding_strategy: optim_grads
+  overlap_grad_reduce: false
+  overlap_param_gather: true
+
+mixed_precision: "bf16_with_fp8_current_scaling_mixed"

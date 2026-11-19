@@ -1,0 +1,41 @@
+
+__module__: megatron.energon
+__class__: MetadatasetV2
+
+splits:
+  train:
+    blend:
+      #### 图片生成 ####
+      # - weight: 0.3                          # 生成数据权重（可自行调整）
+      #   path: ./output/test_wds_i2i
+      # - weight: 0.4
+      #   path: ./output/test_wds_t2i
+      # - weight: 0.3
+      #   path: ./output/wds_inter
+      - weight: 1.0
+        path: ./output/test_wds_t2i
+      # - weight: 1.0
+        # path: ../data/replace-with-your-path
+      # - weight: 1.0
+        # path: ./output/test_t2i_local_1
+      # - weight: 1.0
+        # path: ../data/replace-with-your-path
+
+      #### 纯文数据 ####
+      # - weight: 1.0
+        # path: ./output/test_wds_text_100
+      # - weight: 1.0
+        # path: ../data/replace-with-your-path
+
+      #### 图片理解 ####
+      # - weight: 1.0
+        # path: ./output/wds_inter
+
+  val:
+    path: ./output/test_wds_t2i   # 没有专门的验证集，复用训练数据
+    # path: ./output/test_wds_text_100
+    # path: ./output/wds_inter
+  test:
+    path: ./output/test_wds_t2i
+    # path: ./output/test_wds_text_100
+    # path: ./output/wds_inter

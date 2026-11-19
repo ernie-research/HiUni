@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>HiUni · Harmonizing Understanding and Generation in Shared Visual Space</title>
+<meta name="description" content="HiUni extends a pretrained VLM into a unified multimodal model: one language-aligned ViT and one dense backbone for image understanding, text-to-image generation and image editing, with a Pixel Diffusion Head and a lightweight HiGate pathway.">
+<meta property="og:title" content="HiUni: Harmonizing Understanding and Generation in Shared Visual Space">
+<meta property="og:description" content="One ViT, one dense backbone, pixel-space diffusion. Understanding, generation and editing in a single 4B + 0.9B model.">
+<meta property="og:image" content="assets/readme/architecture.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Fonts load without blocking render, so the page stays usable where Google Fonts is slow or blocked. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,500;9..144,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,500;9..144,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="assets/css/style.css?v=20261119-4">
+<script>document.documentElement.classList.remove('no-js');</script>
+</head>
+<body>
+<a class="skip-link" href="#abstract">Skip to content</a>
+
+<nav class="nav" aria-label="Primary">
+  <div class="nav-inner">
+    <div class="nav-identity"><a class="nav-brand" href="#top" aria-label="HiUni home"><img class="nav-brand-logo" src="assets/brand/hiuni-logo.png" alt="HiUni" width="1912" height="823"></a></div>
+    <div class="nav-links">
+      <a href="#abstract">Abstract</a>
+      <a href="#method">Method</a>
+      <a href="#results">Results</a>
+      <a href="#analysis">Analysis</a>
+      <a href="#gallery">Gallery</a>
+      <a href="#bibtex">BibTeX</a>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"><span class="theme-icon" aria-hidden="true">☾</span></button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="hero-inner">
+    <div class="brand-mark">HiUni</div>
+    <h1>Harmonizing Understanding and Generation in Shared Visual Space</h1>
+    <p class="authors">ERNIE Team</p>
+    <p class="affiliation">Baidu Inc.</p>
+    <div class="cta">
+      <!-- TODO: replace href with the arXiv URL once available -->
+      <a class="btn primary" href="#" aria-disabled="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>Paper</span><span class="soon">soon</span>
+      </a>
+      <a class="btn" href="https://github.com/ernie-research/HiUni" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <span>Code</span>
+      </a>
+      <!-- TODO: replace href with the Hugging Face model URL -->
+      <a class="btn" href="#" aria-disabled="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        <span>Model</span><span class="soon">soon</span>
+      </a>
+      <a class="btn" href="#gallery">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span>Gallery</span>
+      </a>
+    </div>
+  </div>
+  <div class="showcase" aria-label="HiUni showcase">
+    <div class="showcase-head">
+      <span class="showcase-kicker">Created with HiUni</span>
+      <span class="showcase-line"></span>
+      <span class="showcase-caption"><span>Text to image</span><span>Editing</span></span>
+    </div>
+    <div class="marquee" aria-hidden="true"><div class="marquee-track" id="marquee-track"></div></div>
+  </div>
+</header>
+
+<main>
+<section id="abstract">
+  <div class="container reveal">
+    <div class="section-tag">Abstract</div>
+    <h2 class="section-title">Can a pretrained VLM become a unified model without splitting its visual pathway?</h2>
+    <div class="abstract">
+      <p>Unified multimodal models (UMMs) aim to support visual understanding and generation within a single framework. However, prevailing approaches often <b>separate their visual representations or backbone computation</b> to accommodate the different requirements of the two tasks, which limits the degree of unification.</p>
+      <p>We present <b>HiUni</b>, which revisits this design choice and explores whether a pretrained VLM can be directly extended into a unified model with a high degree of sharing. HiUni reuses the <span class="kw">same language-aligned ViT</span> and <span class="kw">dense Transformer backbone</span> for both capabilities, while confining task-specific computation to the output side.</p>
+      <p>Such a design introduces two challenges: direct generation in pixel space is difficult to optimize, and the visual compression and semantic abstraction in pretrained VLMs may discard fine spatial details required for synthesis. HiUni introduces a <span class="kw">Pixel Diffusion Head</span> tailored to direct pixel-space optimization and a lightweight <span class="kw">HiGate</span> pathway that provides fine-grained spatial details near the output stage.</p>
+      <p>Experiments show that HiUni achieves a similar average understanding score to the pretrained VLM while attaining competitive performance on image generation and editing. Controlled comparisons further demonstrate that <b>a single dense backbone can effectively support both capabilities</b> without task-specific backbone computation, highlighting a simpler path toward unified multimodal modeling.</p>
+    </div>
+  </div>
+</section>
+
+<section id="method">
+  <div class="container reveal">
+    <div class="section-tag">Method</div>
+    <h2 class="section-title">Share the visual pathway, specialize only the output</h2>
+    <p class="lead">Existing UMMs either keep separate encoders for understanding and generation, route the two tasks through different experts (MoT), or cascade a VAE with a ViT. HiUni instead reuses the VLM's own visual pathway end to end: the same ViT tokens enter the same dense backbone, and only the generation head and HiGate are new.</p>
+
+    <figure class="figure design-comparison">
+      <div class="designs-diagram" role="img" aria-label="Comparison of BAGEL, TUNA and HiUni unified multimodal architectures">
+        <article class="design-panel design-bagel">
+          <div class="design-stage">
+            <div class="design-heads">
+              <div class="design-module design-und">LM Head</div>
+              <div class="design-module design-gen">Gen Head</div>
+            </div>
+            <div class="design-backbone design-dashed">
+              <div class="design-attention">Self-Attention</div>
+              <div class="design-qkv"><span class="design-und">Und. QKV</span><span class="design-gen">Gen. QKV</span></div>
+            </div>
+            <div class="design-task-labels"><span>Understanding</span><span>Generation</span></div>
+          </div>
+          <div class="design-input-row">
+            <div class="design-module design-und">Text Tokenizer</div>
+            <div class="design-encoder-pair design-dashed"><span class="design-und">Und. Encoder</span><span class="design-gen">Gen. Encoder</span></div>
+          </div>
+          <h4><span>(a)</span> BAGEL</h4>
+        </article>
+
+        <article class="design-panel design-tuna">
+          <div class="design-stage">
+            <div class="design-heads">
+              <div class="design-module design-und">LM Head</div>
+              <div class="design-module design-gen">Gen Head</div>
+            </div>
+            <div class="design-backbone design-unified design-dashed">Uni. <b>Backbone</b></div>
+            <div class="design-task-labels"><span>Understanding</span><span>Generation</span></div>
+          </div>
+          <div class="design-input-row">
+            <div class="design-module design-und">Text Tokenizer</div>
+            <div class="design-encoder-stack design-dashed"><span class="design-und">Und. Encoder</span><span class="design-gen">Gen. Encoder</span></div>
+          </div>
+          <h4><span>(b)</span> TUNA</h4>
+        </article>
+
+        <article class="design-panel design-hiuni">
+          <svg class="design-higate-route" viewBox="0 0 340 215" preserveAspectRatio="none" aria-hidden="true">
+              <defs><marker id="design-higate-arrow" markerWidth="3" markerHeight="3" refX="2.7" refY="1.5" orient="auto"><path d="M0,0 L3,1.5 L0,3 Z"></path></marker></defs>
+              <path d="M319 185 H338 V22 H319"></path>
+          </svg>
+          <span class="design-higate-label">HiGate</span>
+          <div class="design-stage">
+            <div class="design-heads">
+              <div class="design-module design-und">LM Head</div>
+              <div class="design-module design-gen design-pixel-head">Pixel Diffusion Head</div>
+            </div>
+            <div class="design-backbone design-unified design-dashed">Uni. <b>Backbone</b></div>
+            <div class="design-task-labels"><span>Understanding</span><span>Generation</span></div>
+          </div>
+          <div class="design-input-row">
+            <div class="design-module design-und">Text Tokenizer</div>
+            <div class="design-uni-encoder design-dashed">Uni. <b>Encoder</b></div>
+          </div>
+          <h4><span>(c)</span> HiUni</h4>
+        </article>
+      </div>
+      <figcaption class="figcaption"><span class="num">Figure 1.</span><span>Comparison of UMM designs. (a) Bagel uses separate encoders and MoT. (b) TUNA cascades a VAE and a ViT. (c) HiUni reuses the VLM visual pathway, and HiGate supplies pixel details only to the generation head.</span></figcaption>
+    </figure>
+    <figure class="figure">
+      <img src="assets/readme/architecture.png" alt="HiUni model architecture: shared ViT and dense backbone, Pixel Diffusion Head and HiGate" loading="lazy" width="2023" height="840">
+      <figcaption class="figcaption"><span class="num">Figure 2.</span><span>Overview of HiUni. Understanding, text-to-image generation and editing share one ViT and one dense backbone. Backbone features are decoded into RGB patches by the Pixel Diffusion Head; HiGate injects the noisy pixels through a token-wise gate.</span></figcaption>
+    </figure>
+    <div class="arch-explorer">
+      <div class="arch-head">
+        <div class="arch-eyebrow">Inference Process</div>
+      </div>
+      <div class="arch-stack">
+        <figure class="arch-figure arch-understanding">
+          <figcaption><span class="arch-figure-index">01</span><strong>Understanding</strong></figcaption>
+          <div class="arch-flow">
+            <div class="arch-inputs"><div class="arch-node"><span class="arch-icon">Aa</span><strong>Question</strong></div><div class="arch-node"><span class="arch-icon">▦</span><strong>Input image</strong></div></div>
+            <span class="arch-arrow">→</span>
+            <div class="arch-node is-shared"><span class="arch-icon">ViT</span><strong>Language-aligned ViT</strong><em>Shared</em></div>
+            <span class="arch-arrow">→</span>
+            <div class="arch-node is-shared arch-backbone"><span class="arch-icon">Σ</span><strong>Dense Transformer</strong><em>Shared</em></div>
+            <span class="arch-arrow">→</span>
+            <div class="arch-node"><span class="arch-icon">LM</span><strong>Language head</strong></div>
+            <span class="arch-arrow">→</span>
+            <div class="arch-node arch-output"><span class="arch-icon">A</span><strong>Text answer</strong></div>
+          </div>
+        </figure>
+        <figure class="arch-figure arch-generation">
+          <figcaption><span class="arch-figure-index">02</span><strong>Generation</strong></figcaption>
+          <div class="arch-flow">
+            <div class="arch-inputs"><div class="arch-node"><span class="arch-icon">Aa</span><strong>Prompt + timestep</strong></div><div class="arch-node"><span class="arch-icon">▦</span><strong>Noisy RGB</strong></div></div>
+            <span class="arch-arrow">→</span>
+            <div class="arch-node is-shared"><span class="arch-icon">ViT</span><strong>Language-aligned ViT</strong><em>Shared</em></div>
+            <span class="arch-arrow">→</span>
+            <div class="arch-node is-shared arch-backbone"><span class="arch-icon">Σ</span><strong>Dense Transformer</strong><em>Shared</em></div>
+            <span class="arch-arrow">→</span>
+            <div class="arch-output-stack"><div class="arch-node is-specific"><span class="arch-icon">G</span><strong>HiGate</strong></div><div class="arch-node is-specific"><span class="arch-icon">DiT</span><strong>Pixel Diffusion Head</strong></div></div>
+            <span class="arch-arrow">→</span>
+            <div class="arch-node is-specific arch-output"><span class="arch-icon">RGB</span><strong>Generated image</strong></div>
+          </div>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="results">
+  <div class="container reveal">
+    <div class="section-tag">Results</div>
+    <h2 class="section-title">Understanding is preserved, generation and editing are competitive</h2>
+    <p class="lead">Model size is reported as understanding (backbone) parameters + generation-specific parameters. <sup>★</sup> marks officially reported results.</p>
+
+    <div class="tbl-title"><span class="num">Table 1.</span><span>Image understanding</span></div>
+    <p class="tbl-sub">HiUni is initialized from Qwen3-VL-INS-4B. Gains appear on MathVista and HallusionBench, declines on MMBench and OCRBench; understanding remains at the starting model's level across seven benchmarks (75.56 for HiUni vs 75.61 for Qwen3-VL-INS-4B).</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th class="l">Model</th><th>Size</th><th>MathVista<sub>Mini</sub></th><th>MMBench<sub>EN</sub></th><th>RealWorldQA</th><th>MMStar</th><th>HallusionBench</th><th>AI2D</th><th>OCRBench</th><th>OmniDocBench ↓</th></tr></thead>
+      <tbody>
+        <tr class="group"><td colspan="10">Understanding-only models</td></tr>
+        <tr><td class="l">Qwen3-VL-INS<sup>★</sup></td><td>4B</td><td>73.7</td><td>85.1</td><td>70.9</td><td>69.8</td><td>57.6</td><td>84.1</td><td>88.1</td><td>0.24</td></tr>
+        <tr><td class="l">Qwen3-VL-THK<sup>★</sup></td><td>4B</td><td>79.5</td><td>86.7</td><td>73.2</td><td>73.2</td><td>64.1</td><td>84.9</td><td>80.8</td><td>0.23</td></tr>
+        <tr><td class="l">Qwen3-VL-THK</td><td>4B</td><td>76.5</td><td>86.2</td><td>74.1</td><td>70.3</td><td>65.8</td><td>84.5</td><td>79.6</td><td>0.22</td></tr>
+        <tr class="group"><td colspan="10">Unified multimodal models</td></tr>
+        <tr><td class="l">Harmon<sup>★</sup></td><td>1.5B</td><td>–</td><td>65.5</td><td>49.8</td><td>35.3</td><td>–</td><td>–</td><td>11.2</td><td>–</td></tr>
+        <tr><td class="l">Cheers<sup>★</sup></td><td>1.5B</td><td>50.5</td><td>70.4</td><td>60.9</td><td>50.9</td><td>–</td><td>–</td><td>58.4</td><td>–</td></tr>
+        <tr><td class="l">InternVL-U</td><td>2B + 1.7B</td><td>53.9</td><td>71.7</td><td>56.9</td><td>53.5</td><td>32.4</td><td>76.8</td><td>83.9<sup>★</sup></td><td>0.83</td></tr>
+        <tr><td class="l">Janus-Pro</td><td>7B</td><td>44.7</td><td>79.2<sup>★</sup></td><td>58.0</td><td>48.3</td><td>36.4</td><td>71.3</td><td>59.0</td><td>0.81</td></tr>
+        <tr><td class="l">Show-o2</td><td>7B</td><td>51.8</td><td>79.3<sup>★</sup></td><td>64.7<sup>★</sup></td><td>56.6</td><td>36.2</td><td>78.6<sup>★</sup></td><td>32.4</td><td>0.84</td></tr>
+        <tr><td class="l">TUNA<sup>★</sup></td><td>7B</td><td>–</td><td>–</td><td>66.1</td><td>61.2</td><td>–</td><td>79.3</td><td>74.3</td><td>–</td></tr>
+        <tr><td class="l">Bagel</td><td>7B + 7B</td><td>73.1<sup>★</sup></td><td>85.0<sup>★</sup></td><td>74.4</td><td>67.6</td><td>51.8</td><td>89.2</td><td>80.8</td><td>0.43</td></tr>
+        <tr><td class="l">SenseNova-U1</td><td>8B + 8B</td><td>84.2<sup>★</sup></td><td>90.3<sup>★</sup></td><td>73.6<sup>★</sup></td><td>78.3<sup>★</sup></td><td>67.8<sup>★</sup></td><td>91.7<sup>★</sup></td><td>82.1<sup>★</sup></td><td>0.28</td></tr>
+        <tr class="ours"><td class="l">HiUni</td><td>4B + 0.9B</td><td>79.0</td><td>80.7</td><td>72.2</td><td>70.5</td><td>66.0</td><td>86.0</td><td>74.5</td><td>0.24</td></tr>
+      </tbody>
+    </table></div>
+    <div class="tbl-title"><span class="num">Table 2.</span><span>Text-to-image generation</span></div>
+    <p class="tbl-sub">Qwen-Image-Bench (Chinese and English prompts), OneIG overall and LongText. Bold marks the best result among unified models, underline the second best. HiUni has the best Chinese overall score among unified models.</p>
+    <div class="tbl-wrap tbl-wide"><table>
+      <thead>
+        <tr><th class="l" rowspan="2">Model</th><th rowspan="2">Size</th><th colspan="6">Qwen-Image-Bench<sub>ZH</sub></th><th colspan="6">Qwen-Image-Bench<sub>EN</sub></th><th colspan="2">OneIG</th><th colspan="2">LongText</th></tr>
+        <tr><th>Qual.</th><th>Aesth.</th><th>Align.</th><th>Real.</th><th>Creat.</th><th>Overall</th><th>Qual.</th><th>Aesth.</th><th>Align.</th><th>Real.</th><th>Creat.</th><th>Overall</th><th>ZH</th><th>EN</th><th>ZH</th><th>EN</th></tr>
+      </thead>
+      <tbody>
+        <tr class="group"><td colspan="18">Generation-only models</td></tr>
+        <tr><td class="l">GLM-Image</td><td>9B + 7B</td><td>49.26</td><td>50.64</td><td>47.90</td><td>44.69</td><td>45.23</td><td>48.19</td><td>49.86</td><td>49.98</td><td>47.49</td><td>44.25</td><td>44.67</td><td>47.86</td><td>0.511<sup>★</sup></td><td>0.528<sup>★</sup></td><td>0.979<sup>★</sup></td><td>0.952<sup>★</sup></td></tr>
+        <tr><td class="l">Qwen-Image<sup>★</sup></td><td>20B</td><td>48.44</td><td>52.25</td><td>50.72</td><td>43.16</td><td>47.30</td><td>49.23</td><td>48.45</td><td>51.18</td><td>50.04</td><td>43.45</td><td>45.37</td><td>48.48</td><td>0.548</td><td>0.539</td><td>0.946</td><td>0.943</td></tr>
+        <tr><td class="l">HiDream-O1</td><td>8B</td><td>48.61</td><td>49.75</td><td>49.53</td><td>43.97</td><td>40.96</td><td>47.58</td><td>48.84</td><td>49.69</td><td>49.53</td><td>43.80</td><td>41.05</td><td>47.59</td><td>0.518</td><td>0.521</td><td>0.978<sup>★</sup></td><td>0.979<sup>★</sup></td></tr>
+        <tr class="group"><td colspan="18">Unified multimodal models</td></tr>
+        <tr><td class="l">InternVL-U</td><td>2B + 1.7B</td><td>42.34</td><td>43.38</td><td>40.30</td><td>38.13</td><td>34.36</td><td>40.54</td><td>43.92</td><td>43.03</td><td>41.09</td><td>38.87</td><td>32.35</td><td>40.82</td><td>0.500<sup>★</sup></td><td>0.500<sup>★</sup></td><td>0.860<sup>★</sup></td><td>0.738<sup>★</sup></td></tr>
+        <tr><td class="l">Bagel</td><td>7B + 7B</td><td>46.11</td><td>45.88</td><td>40.27</td><td>39.74</td><td>32.69</td><td>42.15</td><td>45.90</td><td>47.20</td><td>43.48</td><td>40.30</td><td>34.83</td><td>43.45</td><td>0.370</td><td>0.361</td><td>0.310</td><td>0.373</td></tr>
+        <tr><td class="l">SenseNova-U1<sup>★</sup></td><td>8B + 8B</td><td>45.79</td><td>47.07</td><td>47.78</td><td>42.53</td><td>43.88</td><td>45.99</td><td>47.30</td><td>50.30</td><td>50.58</td><td>43.13</td><td>46.15</td><td><b>48.28</b></td><td>0.535</td><td>0.549</td><td><u>0.962</u></td><td><b>0.979</b></td></tr>
+        <tr><td class="l">UniSpace</td><td>8B + 8B</td><td>47.22</td><td>45.02</td><td>48.54</td><td>46.19</td><td>40.49</td><td><u>46.05</u></td><td>47.44</td><td>46.54</td><td>48.94</td><td>47.54</td><td>43.84</td><td>47.05</td><td><b>0.533</b><sup>★</sup></td><td><b>0.561</b><sup>★</sup></td><td>–</td><td>–</td></tr>
+        <tr class="ours"><td class="l">HiUni</td><td>4B + 0.9B</td><td>46.73</td><td>50.00</td><td>50.45</td><td>43.09</td><td>45.62</td><td><b>47.98</b></td><td>47.63</td><td>50.52</td><td>48.78</td><td>43.70</td><td>44.15</td><td><u>47.70</u></td><td>0.524</td><td>0.538</td><td><b>0.963</b></td><td>0.954</td></tr>
+      </tbody>
+    </table></div>
+    <div class="tbl-title"><span class="num">Table 3.</span><span>Image editing</span></div>
+    <p class="tbl-sub">ImgEdit (0–5) and GEdit (0–10, VIEScore protocol), both judged by GPT-5.2. HiUni ranks second among unified models on ImgEdit and on both GEdit splits.</p>
+    <div class="tbl-wrap tbl-wide"><table>
+      <thead>
+        <tr><th class="l" rowspan="2">Model</th><th rowspan="2">Size</th><th colspan="10">ImgEdit</th><th colspan="3">GEdit<sub>CN</sub></th><th colspan="3">GEdit<sub>EN</sub></th></tr>
+        <tr><th>Add</th><th>Adjust</th><th>Extract</th><th>Replace</th><th>Remove</th><th>Backg.</th><th>Style</th><th>Hybrid</th><th>Action</th><th>Overall</th><th>SC</th><th>PQ</th><th>O</th><th>SC</th><th>PQ</th><th>O</th></tr>
+      </thead>
+      <tbody>
+        <tr class="group"><td colspan="18">Editing-only models</td></tr>
+        <tr><td class="l">Qwen-Image-Edit-2511</td><td>20B</td><td>4.22</td><td>4.24</td><td>3.34</td><td>4.37</td><td>3.98</td><td>3.61</td><td>4.39</td><td>3.25</td><td>4.69</td><td>4.01</td><td>8.25</td><td>6.42</td><td>7.19</td><td>8.20</td><td>6.46</td><td>7.17</td></tr>
+        <tr><td class="l">LongCat-Image-Edit</td><td>6B</td><td>4.15</td><td>4.24</td><td>3.39</td><td>4.47</td><td>3.95</td><td>3.57</td><td>4.28</td><td>3.39</td><td>4.70</td><td>4.02</td><td>8.13</td><td>6.44</td><td>7.15</td><td>8.05</td><td>6.44</td><td>7.10</td></tr>
+        <tr><td class="l">Qwen-Image-2.1</td><td>7B</td><td>4.17</td><td>4.24</td><td>2.16</td><td>4.48</td><td>4.13</td><td>3.75</td><td>4.27</td><td>3.15</td><td>2.89</td><td>3.69</td><td>7.60</td><td>6.45</td><td>6.73</td><td>7.91</td><td>6.40</td><td>6.92</td></tr>
+        <tr class="group"><td colspan="18">Unified multimodal models</td></tr>
+        <tr><td class="l">InternVL-U</td><td>2B + 1.7B</td><td>3.94</td><td>3.71</td><td>2.42</td><td>4.08</td><td>3.34</td><td>3.45</td><td>4.03</td><td>2.28</td><td>4.07</td><td>3.48</td><td>6.02</td><td>5.81</td><td>5.74</td><td>6.05</td><td>5.80</td><td>5.74</td></tr>
+        <tr><td class="l">Bagel</td><td>7B + 7B</td><td>3.49</td><td>3.36</td><td>1.17</td><td>3.69</td><td>2.82</td><td>3.06</td><td>3.80</td><td>2.59</td><td>3.82</td><td>3.09</td><td>7.37</td><td>5.71</td><td>6.31</td><td>7.31</td><td>5.68</td><td>6.27</td></tr>
+        <tr><td class="l">SenseNova-U1</td><td>8B + 8B</td><td>3.82</td><td>3.96</td><td>2.44</td><td>4.20</td><td>3.11</td><td>3.59</td><td>4.47</td><td>3.09</td><td>4.20</td><td>3.65</td><td>8.19</td><td>6.20</td><td><b>7.05</b></td><td>8.04</td><td>6.14</td><td><b>6.94</b></td></tr>
+        <tr><td class="l">UniSpace</td><td>8B + 8B</td><td>4.06</td><td>4.01</td><td>3.00</td><td>4.32</td><td>3.99</td><td>3.52</td><td>4.07</td><td>3.16</td><td>4.25</td><td><b>3.82</b></td><td>7.72</td><td>5.84</td><td>6.57</td><td>7.88</td><td>5.87</td><td>6.68</td></tr>
+        <tr class="ours"><td class="l">HiUni</td><td>4B + 0.9B</td><td>3.93</td><td>3.95</td><td>2.72</td><td>4.05</td><td>3.47</td><td>3.32</td><td>4.34</td><td>3.22</td><td>3.95</td><td><u>3.66</u></td><td>7.87</td><td>5.88</td><td><u>6.70</u></td><td>7.93</td><td>6.00</td><td><u>6.81</u></td></tr>
+      </tbody>
+    </table></div>
+    <div class="tbl-title"><span class="num">Table 4.</span><span>Reasoning-based generation (WISE)</span></div>
+    <p class="tbl-sub">A chain-of-thought variant fine-tuned for 10K steps on UniReason-derived data, with no extra backbone or generation module.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th class="l">Model</th><th>Overall</th><th>Cultural</th><th>Time</th><th>Space</th><th>Biology</th><th>Physics</th><th>Chemistry</th></tr></thead>
+      <tbody>
+        <tr><td class="l">DeepGen 1.0<sup>★</sup></td><td>0.57</td><td>0.65</td><td>0.41</td><td>0.72</td><td>0.39</td><td>0.59</td><td>0.45</td></tr>
+        <tr><td class="l">Bagel w/ CoT<sup>★</sup></td><td>0.63</td><td>0.78</td><td>0.63</td><td>0.57</td><td>0.38</td><td>0.55</td><td>0.51</td></tr>
+        <tr><td class="l">SenseNova-U1-8B<sup>★</sup></td><td>0.68</td><td>0.69</td><td>0.60</td><td>0.74</td><td>0.63</td><td>0.72</td><td>0.69</td></tr>
+        <tr><td class="l">SenseNova-U1-8B w/ CoT<sup>★</sup></td><td>0.79</td><td>0.80</td><td>0.74</td><td>0.86</td><td>0.76</td><td>0.78</td><td>0.80</td></tr>
+        <tr><td class="l">Qwen-Image-2.0<sup>★</sup></td><td>0.80</td><td>0.82</td><td>0.65</td><td>0.90</td><td>0.79</td><td>0.80</td><td>0.75</td></tr>
+        <tr><td class="l">GPT-Image-1.5<sup>★</sup></td><td>0.83</td><td>0.89</td><td>0.69</td><td>0.88</td><td>0.80</td><td>0.76</td><td>0.78</td></tr>
+        <tr class="ours"><td class="l">HiUni w/ CoT</td><td>0.75</td><td>0.81</td><td>0.68</td><td>0.78</td><td>0.63</td><td>0.74</td><td>0.78</td></tr>
+      </tbody>
+    </table></div>
+    <div class="legend"><span><b>Bold</b>: best among unified models</span><span><u>Underline</u>: second best</span><span>★: officially reported</span></div>
+  </div>
+</section>
+
+<section id="analysis">
+  <div class="container reveal">
+    <div class="section-tag">Analysis</div>
+    <h3 class="sub-title" style="margin-top:0">Dense backbone vs. Mixture-of-Transformers</h3>
+    <p class="lead">At the same total parameter budget, <b>HiUni-Dense-4B</b> beats HiUni-MoT-2B (two 2B branches) on all six understanding benchmarks (65.04 vs 59.23 average), at the cost of a ~9% lower OneIG average. Scaling the dense backbone from 2B to 4B gives +11.1% understanding and +7.9% OneIG.</p>
+    <div class="dense-mot-table-wrap">
+      <div class="dense-mot-caption">Comparison between shared dense and task-routed MoT backbones under controlled settings. HiUni-Dense-2B and HiUni-MoT-2B differ only in backbone design while HiUni-Dense-4B evaluates a larger shared backbone under a similar total parameter budget. HiUni-Und-4B and HiUni-Gen-4B serve as understanding-only and generation-only baselines, respectively.</div>
+      <div class="dense-mot-row">
+        <div class="tbl-wrap dense-mot-table">
+          <table>
+            <colgroup><col class="dense-mot-name"><col class="dense-mot-size"><col span="7"><col class="dense-mot-generation"></colgroup>
+            <thead>
+              <tr><th class="l" colspan="2">Model</th><th colspan="7">Understanding</th><th>Generation</th></tr>
+              <tr><th class="l">Name</th><th>Size</th><th>MMBench<sub>EN</sub></th><th>RealWorldQA</th><th>MMStar</th><th>HallusionBench</th><th>AI2D</th><th>OCRBench</th><th>Avg.</th><th>OneIG Avg.</th></tr>
+            </thead>
+            <tbody>
+              <tr class="ours"><td class="l"><b>HiUni-Dense-4B</b></td><td>4B+0.5B</td><td><b>72.60</b></td><td><b>65.49</b></td><td><b>53.93</b></td><td><b>48.96</b></td><td><b>77.95</b></td><td>71.30</td><td><b>65.04</b></td><td>0.314</td></tr>
+              <tr><td class="l">HiUni-Dense-2B</td><td>2B+0.5B</td><td>64.94</td><td>60.39</td><td>46.67</td><td>38.70</td><td>70.47</td><td>70.10</td><td>58.55</td><td>0.291</td></tr>
+              <tr><td class="l">HiUni-MoT-2B</td><td>4B+0.5B</td><td>67.97</td><td>63.27</td><td>47.00</td><td>35.33</td><td>71.76</td><td>70.02</td><td>59.23</td><td>0.345</td></tr>
+              <tr><td class="l">HiUni-Und-4B</td><td>4B</td><td>72.52</td><td>63.79</td><td>53.33</td><td>46.96</td><td>77.85</td><td><b>73.00</b></td><td>64.58</td><td>–</td></tr>
+              <tr><td class="l">HiUni-Gen-4B</td><td>4B+0.5B</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>0.390</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <figure class="figure dense-mot-figure">
+          <img src="assets/figures/dense_vs_mot.webp" alt="Training curves comparing the dense backbone with the MoT backbone" loading="lazy" width="2200" height="1009">
+          <figcaption class="figcaption">Training trajectories during joint pretraining after warmup: average understanding and OneIG scores.</figcaption>
+        </figure>
+      </div>
+    </div>
+    <div class="higate-analysis-row">
+      <div class="higate-analysis-copy">
+        <h3 class="sub-title">Where should HiGate take its input?</h3>
+        <p class="lead">Both residual sources improve generation over removing the gate; <b>raw pixel features</b> work best (OneIG 0.267 → 0.284 with ViT features → 0.314 with pixels), while the understanding average barely moves (65.04–65.17). The learned gate stays weak at high noise and strengthens near the clean image, and early checkpoints rely on it more.</p>
+        <div class="tbl-wrap analysis-table higate-table"><table>
+          <thead><tr><th class="l">HiGate input</th><th>MMB</th><th>RWQA</th><th>MMStar</th><th>HallB</th><th>AI2D</th><th>OCRB</th><th>OneIG</th></tr></thead>
+          <tbody>
+            <tr class="ours"><td class="l">Pixel Features</td><td>72.60</td><td>65.49</td><td>53.93</td><td>48.96</td><td>77.95</td><td>71.30</td><td>0.314</td></tr>
+            <tr><td class="l">ViT Features</td><td>74.61</td><td>67.45</td><td>53.07</td><td>49.05</td><td>77.82</td><td>69.00</td><td>0.284</td></tr>
+            <tr><td class="l">No Gate</td><td>72.91</td><td>65.88</td><td>54.13</td><td>46.70</td><td>77.75</td><td>73.00</td><td>0.267</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <figure class="figure higate-strength-figure">
+        <img src="assets/figures/higate_strength.webp" alt="HiGate injection strength across diffusion timesteps and training checkpoints" loading="lazy" width="2200" height="1400">
+        <figcaption class="figcaption">HiGate injection strength across diffusion timesteps and training checkpoints, normalized by the global maximum.</figcaption>
+      </figure>
+    </div>
+    <div class="cross-task-analysis">
+      <h3 class="sub-title">Cross-task interaction</h3>
+      <p class="lead">Adding image-editing supervision raises the understanding average from 62.64 to 64.49 (gains on four of six benchmarks), while OneIG dips slightly, a mix of positive transfer and mild interference.</p>
+      <div class="tbl-wrap analysis-table"><table>
+        <thead><tr><th class="l"></th><th>MMB</th><th>RWQA</th><th>MMStar</th><th>HallB</th><th>AI2D</th><th>OCRB</th><th>Avg.</th><th>OneIG</th></tr></thead>
+        <tbody>
+          <tr><td class="l">w/o Editing data</td><td>69.58</td><td>64.58</td><td>50.20</td><td>48.43</td><td>72.54</td><td>70.50</td><td>62.64</td><td>0.538</td></tr>
+          <tr class="ours"><td class="l">w/ Editing data</td><td>72.29</td><td>66.80</td><td>55.00</td><td>43.83</td><td>79.24</td><td>69.80</td><td>64.49</td><td>0.528</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <h3 class="sub-title">Why no AdaLN in the head</h3>
+    <p class="lead">With block-wise AdaLN, the Pixel Diffusion Head frequently produced abrupt loss spikes in pixel space. Replacing it with a <code>&lt;time&gt;</code> token and a single final modulation gives smoother training. The two runs come from different development stages, so this is a qualitative comparison.</p>
+    <figure class="figure" style="max-width:820px">
+      <img src="assets/figures/adaln_loss.webp" alt="Diffusion loss curves with and without AdaLN in the Pixel Diffusion Head" loading="lazy" width="2200" height="849">
+      <figcaption class="figcaption">Diffusion training loss with AdaLN (left) and without AdaLN (right).</figcaption>
+    </figure>
+  </div>
+</section>
+<section id="gallery">
+  <div class="container reveal">
+    <div class="section-tag">Gallery</div>
+    <h2 class="section-title">Samples generated by HiUni</h2>
+    <div class="tabs" role="tablist" aria-label="Gallery categories">
+      <button class="tab-btn" role="tab" id="tab-t2i" aria-controls="panel-t2i" aria-selected="true" tabindex="0">
+        <span class="tab-title">Text-to-Image</span><span class="tab-desc">Pixel-space generation up to 2048²</span>
+      </button>
+      <button class="tab-btn" role="tab" id="tab-edit" aria-controls="panel-edit" aria-selected="false" tabindex="-1">
+        <span class="tab-title">Image Editing</span><span class="tab-desc">Drag to compare input and output</span>
+      </button>
+    </div>
+    <div class="tab-panel" role="tabpanel" id="panel-t2i" aria-labelledby="tab-t2i" tabindex="0">
+      <div class="masonry" id="grid-t2i"></div>
+    </div>
+    <div class="tab-panel" role="tabpanel" id="panel-edit" aria-labelledby="tab-edit" tabindex="0" hidden>
+      <p class="hint">Drag the slider (or focus it and use the arrow keys) to reveal the edited result.</p>
+      <div class="edit-grid" id="grid-edit"></div>
+    </div>
+  </div>
+</section>
+
+  <div class="container reveal">
+    <div class="section-tag">BibTeX</div>
+    <h2 class="section-title">Citation</h2>
+    <!-- TODO: replace with the final arXiv BibTeX entry and author list -->
+    <div class="code"><pre class="bibtex"><code id="bibtex-text">@misc{hiuni2026,
+  title  = {HiUni: Harmonizing Understanding and Generation in Shared Visual Space},
+  author = {ERNIE Team},
+  year   = {2026},
+  note   = {Preprint}
+}</code></pre><button class="copy-btn" type="button">Copy</button></div>
+  </div>
+</section>
+
+<section id="ack">
+  <div class="container reveal">
+    <div class="section-tag">Acknowledgements</div>
+    <p class="ack">HiUni is built on <a href="https://github.com/QwenLM/Qwen3-VL">Qwen3-VL</a>. Training uses <a href="https://github.com/NVIDIA-NeMo/Megatron-Bridge">Megatron-Bridge</a>, <a href="https://github.com/NVIDIA/Megatron-LM">Megatron-LM</a> and the <a href="https://github.com/NVIDIA/NeMo">NeMo</a> container, with attention masks from <a href="https://github.com/PaddlePaddle/FlashMask">FlashMask</a>. The x-prediction objective follows JiT. We thank the authors of these projects and of the open benchmarks used in our evaluation.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <p>© 2026 ERNIE Team, Baidu Inc. Page layout adapted from the NAVA project page.</p>
+</footer>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
+  <button class="lb-btn lb-close" type="button" aria-label="Close">×</button>
+  <button class="lb-btn lb-prev" type="button" aria-label="Previous image">‹</button>
+  <img id="lb-img" alt="">
+  <button class="lb-btn lb-next" type="button" aria-label="Next image">›</button>
+</div>
+
+<script src="assets/js/main.js?v=20261119-2"></script>
+</body>
+</html>

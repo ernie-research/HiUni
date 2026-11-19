@@ -1,0 +1,159 @@
+# Hot-start (continued SFT) from the released Pixel-DiT Megatron checkpoint.
+#
+# 1. Get the Megatron checkpoint, either the released one or an import of the HF export:
+#      python recipe/transfusion/import_hf_to_megatron.py \
+#          --hf-path checkpoints/pixel_dit_hf --megatron-path checkpoints/pixel_dit_megatron
+# 2. Point data_streams at your Energon MetadatasetV2 blends (see recipe/transfusion/probs/).
+# 3. Launch:
+#      CONFIG_FILE=recipe/transfusion/conf/transfusion_qwen3_vl_4b_pixel_dit_sft_hotstart.yaml \
+#          bash recipe/transfusion/run_transfusion_pretrain.sh
+#
+# The architecture keys under `transfusion:` must match the checkpoint. The values below are the
+# released model's: 10 Pixel-DiT layers whose width and heads are inherited from the LM (0 = inherit),
+# a pixel gate injected at layer 3 with a shared reference gate, a pixel residual, and x0 prediction
+# trained with v-loss.
+#
+# checkpoint.pretrained_checkpoint is read only while checkpoint.load contains no checkpoint. That
+# first run loads the weights alone (finetune semantics: iteration 0, fresh optimizer and RNG).
+# Restarts after that resume from checkpoint.save, including optimizer state.
+
+train:
+  train_iters: 2000
+  global_batch_size: 256
+  micro_batch_size: 2
+  eval_iters: 0
+  eval_interval: 1000000
+
+# The release was trained with lr 2e-5 -> 2e-6, warmup 2000, GBS 2048 for 8000 steps. A shorter
+# continuation uses a lower peak and a short warmup.
+optimizer:
+  lr: 0.00001
+  min_lr: 0.000001
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  weight_decay: 0.0
+  adam_eps: 1e-8
+  clip_grad: 1.0
+
+scheduler:
+  lr_warmup_iters: 100
+  lr_decay_style: cosine
+
+# Flow-matching timestep sampling. Dynamic noise scaling matches the released HF config
+# (dynamic_noise_ref_tokens 256, base scale 1.0); inference reads the same values.
+scheduler_config:
+  shift: 1.0
+  timestep_sampling: shift_uniform
+  logit_norm_sigma: 1.0
+  use_loss_reweight: false
+  use_dynamic_noise_scale: true
+  dynamic_noise_ref_tokens: 256
+  dynamic_noise_base_scale: 1.0
+
+checkpoint:
+  pretrained_checkpoint: ./checkpoints/pixel_dit_megatron
+  load: ./output/pixel_dit_sft_hotstart
+  save: ./output/pixel_dit_sft_hotstart
+  save_interval: 500
+  dist_ckpt_strictness: log_all
+  ckpt_convert_format: float32
+  ckpt_convert_save: true
+
+dist:
+  use_megatron_fsdp: false
+  use_torch_fsdp2: false
+  distributed_timeout_minutes: 60
+
+logger:
+  log_interval: 1
+  log_throughput: true
+  tensorboard_dir: ./output/tb/pixel_dit_sft_hotstart
+  log_timers_to_tensorboard: true
+  log_memory_to_tensorboard: true
+  log_throughput_to_tensorboard: true
+  log_l2_norm_grad_to_tensorboard: true
+  throughput_window_size: 10
+
+dataset:
+  seq_length: 9216
+  global_batch_size: 256
+  micro_batch_size: 2
+  packing_buffer_size: 64
+  num_workers: 4
+  dataloader_save: ./output/pixel_dit_sft_hotstart-dataloader
+
+transfusion:
+  # Base Qwen3-VL-4B-Instruct: supplies the LM/ViT configs and the tokenizer.
+  hf_path: ./checkpoints/Qwen3-VL-4B-Instruct
+  seq_length: 9216
+  train_iters: 2000
+  global_batch_size: 256
+  micro_batch_size: 2
+
+  # ---- Architecture: must match the checkpoint ----
+  num_diffusion_layers: 10
+  num_diffusion_heads: 0              # 0 = inherit from the LM
+  num_diffusion_kv_heads: 0
+  pixel_dit_hidden_size: 0
+  diffusion_intermediate_size: 0
+  pixel_dit_gate_input: pixel
+  pixel_dit_gate_inject_layer: 3
+  pixel_dit_ref_gate_mode: shared
+  use_pixel_dit_pixel_residual: true
+  dit_head_impl: torch
+  dit_block_adaln: false
+  adaln_post_modulation: false
+
+  # ---- Objective ----
+  predict_x0: true
+  diffusion_loss_type: v-loss
+  diffusion_loss_reduction: auto
+  diff_loss_weight: 1.0
+  edit_diff_loss_weight: 1.0
+  cfg_drop_rate: 0.1
+
+  # ---- Memory ----
+  diffusion_head_recompute: true
+  vit_recompute: true
+
+  # ---- Image resolution ----
+  gen_min_pixels: 262144              # 512x512
+  gen_max_pixels: 4194304             # 2048x2048
+  und_min_pixels: 262144
+  und_max_pixels: 4194304
+
+  # ---- Data: one Energon pipeline per modality ----
+  # Samples per global batch for each stream; the values must sum to global_batch_size.
+  batch_schedule:
+    text: 32
+    understanding: 64
+    generation: 160
+  batch_schedule_strict: true
+  data_streams:
+    text: ./recipe/transfusion/probs/test_text.yaml
+    understanding: ./recipe/transfusion/probs/test_i2t.yaml
+    generation: ./recipe/transfusion/probs/test_t2i.yaml
+
+model:
+  # The release was trained end to end: nothing is frozen.
+  freeze_language_model: false
+  freeze_vision_model: false
+  freeze_vision_projection: false
+  freeze_dit_param: false
+  freeze_pixel_proj_param: false
+  freeze_pixel_dit_gate_param: false
+  use_flashmask: true
+  recompute_granularity: full
+  recompute_method: uniform
+  recompute_num_layers: 1
+
+rng:
+  seed: 42
+
+ddp:
+  grad_reduce_in_fp32: true
+  data_parallel_sharding_strategy: optim_grads
+  overlap_grad_reduce: false
+  overlap_param_gather: true
+
+mixed_precision: bf16_with_fp8_current_scaling_mixed

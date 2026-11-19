@@ -1,0 +1,16 @@
+
+__module__: megatron.energon
+__class__: MetadatasetV2
+
+splits:
+  train:
+    blend:
+      #### 图片编辑 ####
+      - weight: 1.0                          # 生成数据权重（可自行调整）
+        path: ./output/test_wds_i2i
+
+  val:
+    path: ./output/test_wds_i2i   # 没有专门的验证集，复用训练数据
+
+  test:
+    path: ./output/test_wds_i2i
