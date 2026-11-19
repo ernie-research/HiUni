@@ -6,15 +6,14 @@
 
 <div align="center">
   <h1 style="font-size:3em; line-height:1.1; margin:0"><span style="background:linear-gradient(90deg,#2F8077 0%,#4F75B8 50%,#7457B8 100%);background-clip:text;-webkit-background-clip:text;color:transparent">HiUni</span>: Harmonizing Understanding and Generation in Shared Visual Space</h1>
-  <p><strong>English</strong> · <a href="README_ZH.md">简体中文</a></p>
   <p>
-    <a href="docs/index.html"><img src="https://img.shields.io/badge/Project%20Page-HiUni-1f6feb?logo=googlechrome&logoColor=white" alt="Project page"></a>
-    <a href="#citation"><img src="https://img.shields.io/badge/arXiv-coming%20soon-b31b1b?logo=arxiv&logoColor=white" alt="arXiv"></a>
-    <a href="#models"><img src="https://img.shields.io/badge/Hugging%20Face-coming%20soon-FFD21E?logo=huggingface&logoColor=111111" alt="Hugging Face"></a>
+    <a href="https://ernie-research.github.io/HiUni/"><img src="https://img.shields.io/badge/Project%20Page-HiUni-1f6feb?logo=googlechrome&logoColor=white" alt="Project page"></a>
+    <a href="#-citation"><img src="https://img.shields.io/badge/arXiv-coming%20soon-b31b1b?logo=arxiv&logoColor=white" alt="arXiv"></a>
+    <a href="#-models"><img src="https://img.shields.io/badge/Hugging%20Face-coming%20soon-FFD21E?logo=huggingface&logoColor=111111" alt="Hugging Face"></a>
   </p>
 </div>
 
-HiUni is a unified multimodal model initialized from Qwen3-VL-4B-Instruct. One language-aligned ViT and one dense backbone serve understanding, text-to-image generation and image editing. The only generation-specific parts are a Pixel Diffusion Head that decodes RGB patches directly and a light HiGate path that feeds pixel detail to that head.
+HiUni shares the same visual encoder and dense backbone across understanding, generation, and editing. Language understanding is handled by a language modeling head, while image synthesis is performed by a *Pixel Diffusion Head*. To bridge semantic representations and pixel-level details, *HiGate* provides a lightweight residual pathway that supplies local spatial cues weakened by visual compression.
 
 <div align="center">
 
@@ -22,23 +21,18 @@ HiUni is a unified multimodal model initialized from Qwen3-VL-4B-Instruct. One l
 
 </div>
 
+## ✨ Highlights
+
+- **One Shared Visual Space** for understanding, generation and editing, with only the output heads task-specific.
+- **Strong Understanding** retained under joint training, on par with an understanding-only model of the same architecture.
+- **VAE-Free Pixel Generation** up to 2048², with HiGate supplying the fine spatial detail lost in patch merging.
+- **Small Model** with a 4B backbone and only 0.9B generation-specific parameters.
+- **One Checkpoint** for image understanding, generation and editing.
+
 ## 📰 News
 
-- **[2026-10]** We release the HiUni code: Megatron training (full fine-tuning and LoRA),
-  Megatron and transformers inference, and Megatron <-> HF checkpoint conversion. Model
-  weights and the paper are coming soon.
-
-  Highlights:
-
-  - **Shared visual space:** the VLM's ViT and backbone are reused for generation, while
-    understanding remains at the Qwen3-VL-4B-Instruct level across seven benchmarks
-    (75.56 average versus 75.61 for the starting model).
-  - **Pixel-space generation** up to 2048², with 4B backbone + 0.9B generation-specific
-    parameters.
-  - **Text rendering:** best Chinese overall score among unified models on
-    Qwen-Image-Bench (47.98); LongText ZH 0.963, EN 0.954.
-  - **Image editing:** ImgEdit 3.66, GEdit CN 6.70 / EN 6.81 (GPT-5.2 judge).
-  - **One checkpoint** for text-to-image, editing, chat and image understanding.
+- **[2026-11]** We release the HiUni code: Megatron training (full fine-tuning and LoRA),
+  Megatron and transformers inference, and Megatron <-> HF checkpoint conversion.
 
 ## 📘 User guide
 
@@ -47,19 +41,20 @@ HiUni is a unified multimodal model initialized from Qwen3-VL-4B-Instruct. One l
 - [`recipe/transfusion/README.md`](recipe/transfusion/README.md): training configs, hot
   start, LoRA, data conversion, Megatron inference, benchmark scripts and checkpoint
   conversion.
-- [Project page](docs/index.html): method, results and ablations.
+- [Project page](https://ernie-research.github.io/HiUni/): method, results and ablations.
 
 ## 🧭 Contents
 
-- [News](#news)
-- [User guide](#user-guide)
-- [Models](#models)
-- [Quick start](#quick-start)
+- [Highlights](#-highlights)
+- [News](#-news)
+- [User guide](#-user-guide)
+- [Models](#-models)
+- [Quick start](#-quick-start)
   - [Inference](#inference)
   - [Train](#train)
-- [Showcase](#showcase)
-- [Citation](#citation)
-- [Acknowledgements](#acknowledgements)
+- [Showcase](#-showcase)
+- [Citation](#-citation)
+- [Acknowledgements](#-acknowledgements)
 
 ## 📦 Models
 
@@ -235,8 +230,6 @@ checkpoint. To export a trained checkpoint to HF format, see
   note   = {Preprint}
 }
 ```
-
-The base vision-language model is [Qwen3-VL](https://github.com/QwenLM/Qwen3-VL); please cite the project when using HiUni.
 
 ## 📄 Acknowledgements
 
