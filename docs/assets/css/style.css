@@ -54,7 +54,8 @@ code{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:.88em;backgro
 .nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);background:var(--nav-bg);border-bottom:1px solid var(--line)}
 .nav-inner{max-width:var(--maxw);margin:0 auto;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
 .nav-identity{display:flex;align-items:center;gap:12px}
-.nav-brand{display:flex;align-items:center;color:var(--ink);font-size:15px;font-weight:600}
+.nav-brand{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:15px;font-weight:600}
+.logo-mark{width:24px;height:24px;border-radius:6px;background:var(--grad);display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700}
 .nav-links{display:flex;align-items:center;gap:24px}
 .nav-links a{color:var(--text-2);font-size:14px;font-weight:500}
 .nav-links a:hover{color:var(--ink)}
