@@ -62,9 +62,9 @@ HiUni shares the same visual encoder and dense backbone across understanding, ge
 | Model | Hugging Face | Description |
 | --- | --- | --- |
 | HiUni (HF) | [ernie-research/HiUni](https://huggingface.co/ernie-research/HiUni) | Primary release in transformers format (`trust_remote_code`), for inference |
-| HiUni Base (HF) | [HiUni-Base](https://huggingface.co/ernie-research/HiUni/tree/main/HiUni-Base) | 512 px version trained without synthetic data |
+| HiUni Base (HF) | [HiUni-Base](https://huggingface.co/ernie-research/HiUni/tree/main/HiUni-Base) | Version trained without synthetic data; recommended generation resolution: 1024 x 1024 |
 | HiUni (Megatron) | [Megatron/HiUni](https://huggingface.co/ernie-research/HiUni/tree/main/Megatron/HiUni) | Model-only Megatron torch_dist format, for training and Megatron inference |
-| HiUni Base (Megatron) | [Megatron/HiUni-Base](https://huggingface.co/ernie-research/HiUni/tree/main/Megatron/HiUni-Base) | Model-only 512 px checkpoint trained without synthetic data |
+| HiUni Base (Megatron) | [Megatron/HiUni-Base](https://huggingface.co/ernie-research/HiUni/tree/main/Megatron/HiUni-Base) | Model-only checkpoint trained without synthetic data; recommended generation resolution: 1024 x 1024 |
 | Qwen3-VL-4B-Instruct | [Qwen/Qwen3-VL-4B-Instruct](https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct) | Tokenizer and processor used by training |
 
 Put the selected checkpoints under `checkpoints/pixel_dit_hf`,
