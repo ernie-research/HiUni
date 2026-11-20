@@ -9,7 +9,7 @@
   <p>
     <a href="https://ernie-research.github.io/HiUni/"><img src="https://img.shields.io/badge/Project%20Page-HiUni-1f6feb?logo=googlechrome&logoColor=white" alt="Project page"></a>
     <a href="https://arxiv.org/abs/2611.26107"><img src="https://img.shields.io/badge/arXiv-2611.26107-b31b1b?logo=arxiv&logoColor=white" alt="arXiv"></a>
-    <a href="#-models"><img src="https://img.shields.io/badge/Hugging%20Face-coming%20soon-FFD21E?logo=huggingface&logoColor=111111" alt="Hugging Face"></a>
+    <a href="https://huggingface.co/ernie-research/HiUni"><img src="https://img.shields.io/badge/Hugging%20Face-HiUni-FFD21E?logo=huggingface&logoColor=111111" alt="Hugging Face"></a>
   </p>
 </div>
 
@@ -61,12 +61,15 @@ HiUni shares the same visual encoder and dense backbone across understanding, ge
 
 | Model | Hugging Face | Description |
 | --- | --- | --- |
-| HiUni (HF) | coming soon | transformers format (`trust_remote_code`), for inference |
-| HiUni (Megatron) | coming soon | Megatron torch_dist format, for training and Megatron inference |
+| HiUni (HF) | [ernie-research/HiUni](https://huggingface.co/ernie-research/HiUni) | Primary release in transformers format (`trust_remote_code`), for inference |
+| HiUni Base (HF) | [HiUni-Base](https://huggingface.co/ernie-research/HiUni/tree/main/HiUni-Base) | 512 px version trained without synthetic data |
+| HiUni (Megatron) | [Megatron/HiUni](https://huggingface.co/ernie-research/HiUni/tree/main/Megatron/HiUni) | Model-only Megatron torch_dist format, for training and Megatron inference |
+| HiUni Base (Megatron) | [Megatron/HiUni-Base](https://huggingface.co/ernie-research/HiUni/tree/main/Megatron/HiUni-Base) | Model-only 512 px checkpoint trained without synthetic data |
 | Qwen3-VL-4B-Instruct | [Qwen/Qwen3-VL-4B-Instruct](https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct) | Tokenizer and processor used by training |
 
-Put them under `checkpoints/pixel_dit_hf`, `checkpoints/pixel_dit_megatron` and
-`checkpoints/Qwen3-VL-4B-Instruct`; the scripts below default to these paths.
+Put the selected checkpoints under `checkpoints/pixel_dit_hf`,
+`checkpoints/pixel_dit_megatron` and `checkpoints/Qwen3-VL-4B-Instruct`; the scripts below
+default to these paths.
 
 ## ⚡ Quick start
 
