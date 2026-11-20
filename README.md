@@ -8,7 +8,7 @@
   <h1 style="font-size:3em; line-height:1.1; margin:0"><span style="background:linear-gradient(90deg,#2F8077 0%,#4F75B8 50%,#7457B8 100%);background-clip:text;-webkit-background-clip:text;color:transparent">HiUni</span>: Harmonizing Understanding and Generation in Shared Visual Space</h1>
   <p>
     <a href="https://ernie-research.github.io/HiUni/"><img src="https://img.shields.io/badge/Project%20Page-HiUni-1f6feb?logo=googlechrome&logoColor=white" alt="Project page"></a>
-    <a href="#-citation"><img src="https://img.shields.io/badge/arXiv-coming%20soon-b31b1b?logo=arxiv&logoColor=white" alt="arXiv"></a>
+    <a href="https://arxiv.org/abs/2611.26107"><img src="https://img.shields.io/badge/arXiv-2611.26107-b31b1b?logo=arxiv&logoColor=white" alt="arXiv"></a>
     <a href="#-models"><img src="https://img.shields.io/badge/Hugging%20Face-coming%20soon-FFD21E?logo=huggingface&logoColor=111111" alt="Hugging Face"></a>
   </p>
 </div>
@@ -31,6 +31,7 @@ HiUni shares the same visual encoder and dense backbone across understanding, ge
 
 ## 📰 News
 
+- **[2026-11]** The [HiUni paper](https://arxiv.org/abs/2611.26107) is available on arXiv.
 - **[2026-11]** We release the HiUni code: Megatron training (full fine-tuning and LoRA),
   Megatron and transformers inference, and Megatron <-> HF checkpoint conversion.
 
@@ -223,11 +224,18 @@ checkpoint. To export a trained checkpoint to HF format, see
 ## 📚 Citation
 
 ```bibtex
-@misc{hiuni2026,
-  title  = {HiUni: Harmonizing Understanding and Generation in Shared Visual Space},
-  author = {ERNIE Team},
-  year   = {2026},
-  note   = {Preprint}
+@article{hu2026hiuni,
+  title         = {HiUni: Harmonizing Understanding and Generation in Shared Visual Space},
+  author        = {Hu, Jiahao and Du, Jingdong and Zhang, Yichen and Song, Yi and
+                   Zhang, Zhenyu and Niu, Jiaxin and Li, Ruihang and Hao, Xiangzhao and
+                   Zhang, Yiqian and Huang, Yong and Zhang, Zefeng and Gu, Zheyuan and
+                   Wang, Shuohuan},
+  journal       = {arXiv preprint arXiv:2611.26107},
+  year          = {2026},
+  eprint        = {2611.26107},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV},
+  url           = {https://arxiv.org/abs/2611.26107}
 }
 ```
 
