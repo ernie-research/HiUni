@@ -165,23 +165,31 @@ See the vLLM-Omni
 for the cuDNN runtime setup. The checkpoint is detected from its `config.json`, so no
 model class or deploy config is needed.
 
+vLLM-Omni downloads the whole Hugging Face repo before loading, and this repo also holds
+the HiUni Base and Megatron checkpoints. Download only the HiUni checkpoint first and pass
+the local directory as the model:
+
+```bash
+hf download ernie-research/HiUni --exclude "HiUni-Base/*" "Megatron/*" --local-dir ./HiUni
+```
+
 Offline, with the shared vLLM-Omni examples:
 
 ```bash
 python examples/offline_inference/text_to_image/text_to_image.py \
-    --model ernie-research/HiUni --prompt "A red fox in fresh snow." \
+    --model ./HiUni --prompt "A red fox in fresh snow." \
     --height 1024 --width 1024 --num-inference-steps 25 --seed 42 --cfg-scale 4.0 \
     --output hiuni_t2i.png
 
 python examples/offline_inference/image_to_image/image_edit.py \
-    --model ernie-research/HiUni --image input.jpg --prompt "Make the sky purple." \
+    --model ./HiUni --image input.jpg --prompt "Make the sky purple." \
     --num-inference-steps 25 --seed 42 --cfg-scale 4.0 --output hiuni_edit.png
 ```
 
 Online, with an OpenAI-compatible server:
 
 ```bash
-vllm serve ernie-research/HiUni --omni --port 8091
+vllm serve ./HiUni --omni --port 8091
 
 # Image understanding (omit the image_url item for text chat)
 curl -s http://localhost:8091/v1/chat/completions -H "Content-Type: application/json" -d '{
