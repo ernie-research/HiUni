@@ -52,6 +52,7 @@ HiUni shares the same visual encoder and dense backbone across understanding, ge
 - [Models](#-models)
 - [Quick start](#-quick-start)
   - [Inference](#inference)
+  - [DiffSynth-Studio and vLLM-Omni](#diffsynth-studio-and-vllm-omni)
   - [Train](#train)
 - [Showcase](#-showcase)
 - [Citation](#-citation)
@@ -106,6 +107,104 @@ DATA_PATH=prompts.jsonl NPROC=8 bash hf_inference/scripts/run_hf_t2i.sh
 
 Sampling options (`STEPS`, `CFG`, `SHIFT`, `HEIGHT`, `WIDTH`, `SEED`, ...) are environment
 variables of the same scripts; see [`hf_inference/README.md`](hf_inference/README.md).
+
+### DiffSynth-Studio and vLLM-Omni
+
+HiUni also runs natively in [DiffSynth-Studio](https://github.com/modelscope/DiffSynth-Studio)
+and [vLLM-Omni](https://github.com/vllm-project/vllm-omni). In both, one checkpoint
+(`ernie-research/HiUni`) serves image understanding, generation and editing. Support is on
+the `hiuni` branch of our forks until it is merged upstream.
+
+#### DiffSynth-Studio
+
+```bash
+git clone -b hiuni https://github.com/591582523h/DiffSynth-Studio.git
+cd DiffSynth-Studio && pip install -e .
+```
+
+```python
+import torch
+from PIL import Image
+from diffsynth.pipelines.hiuni import HiUniPipeline, ModelConfig
+
+repo = "ernie-research/HiUni"
+pipe = HiUniPipeline.from_pretrained(
+    torch_dtype=torch.bfloat16,
+    device="cuda",
+    model_configs=[ModelConfig(model_id=repo, origin_file_pattern="model-*.safetensors", download_source="huggingface")],
+    tokenizer_config=ModelConfig(model_id=repo, origin_file_pattern="tokenizer*.json", download_source="huggingface"),
+    processor_config=ModelConfig(model_id=repo, origin_file_pattern="preprocessor_config.json", download_source="huggingface"),
+)
+
+# Text-to-image
+image = pipe("A red fox in fresh snow.", height=2048, width=2048, seed=42, num_inference_steps=25, cfg_scale=4.0, shift=4.0)
+image.save("hiuni_t2i.jpg")
+
+# Image editing: passing edit_image switches to editing mode
+edit_image = Image.open("input.jpg").convert("RGB")
+pipe("Make the sky purple.", edit_image=edit_image, seed=42).save("hiuni_edit.jpg")
+
+# Image understanding and text chat
+print(pipe.chat("Describe the image.", images=edit_image))
+print(pipe.chat("Explain flow matching briefly.", think_mode="empty"))
+```
+
+All parameters are listed in
+[`docs/en/Model_Details/HiUni.md`](https://github.com/591582523h/DiffSynth-Studio/blob/hiuni/docs/en/Model_Details/HiUni.md).
+
+#### vLLM-Omni
+
+```bash
+uv pip install vllm==0.34.0 --torch-backend=cu130
+git clone -b hiuni https://github.com/591582523h/vllm-omni.git
+cd vllm-omni && uv pip install -e .
+```
+
+See the vLLM-Omni
+[CUDA installation guide](https://github.com/591582523h/vllm-omni/blob/hiuni/docs/getting_started/installation/gpu/cuda.inc.md)
+for the cuDNN runtime setup. The checkpoint is detected from its `config.json`, so no
+model class or deploy config is needed.
+
+Offline, with the shared vLLM-Omni examples:
+
+```bash
+python examples/offline_inference/text_to_image/text_to_image.py \
+    --model ernie-research/HiUni --prompt "A red fox in fresh snow." \
+    --height 1024 --width 1024 --num-inference-steps 25 --seed 42 --cfg-scale 4.0 \
+    --output hiuni_t2i.png
+
+python examples/offline_inference/image_to_image/image_edit.py \
+    --model ernie-research/HiUni --image input.jpg --prompt "Make the sky purple." \
+    --num-inference-steps 25 --seed 42 --cfg-scale 4.0 --output hiuni_edit.png
+```
+
+Online, with an OpenAI-compatible server:
+
+```bash
+vllm serve ernie-research/HiUni --omni --port 8091
+
+# Image understanding (omit the image_url item for text chat)
+curl -s http://localhost:8091/v1/chat/completions -H "Content-Type: application/json" -d '{
+  "messages": [{"role": "user", "content": [
+    {"type": "image_url", "image_url": {"url": "https://example.com/photo.jpg"}},
+    {"type": "text", "text": "Describe the image."}]}],
+  "modalities": ["text"], "think_mode": "empty", "max_new_tokens": 256
+}'
+
+# Text-to-image
+curl -s http://localhost:8091/v1/images/generations -H "Content-Type: application/json" -d '{
+  "prompt": "A red fox in fresh snow.", "size": "1024x1024",
+  "num_inference_steps": 25, "seed": 42, "true_cfg_scale": 4.0
+}'
+
+# Image editing (output keeps the input size unless "size" is given)
+curl -s http://localhost:8091/v1/images/edits \
+  -F image=@input.jpg -F prompt="Make the sky purple." -F num_inference_steps=25 -F seed=42
+```
+
+The image endpoints return the image as base64 in `data[0].b64_json`. Request routing and
+all request parameters are documented in the
+[vLLM-Omni HiUni recipe](https://github.com/591582523h/vllm-omni/blob/hiuni/recipes/Baidu/HiUni.md).
 
 ### Train
 
