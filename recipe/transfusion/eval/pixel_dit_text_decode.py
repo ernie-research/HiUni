@@ -305,9 +305,9 @@ class PixelDiTTextDecoder:
 
 
 def split_answer(text: str) -> str:
-    """Drop a leading ``<think>...</think>`` block; keep text when it is unclosed."""
+    """Keep only the text after the last ``</think>``; keep text when it is unclosed."""
     if THINK_END in text:
-        text = text.split(THINK_END, 1)[1]
+        text = text.rsplit(THINK_END, 1)[1]
     return re.sub(r"^\s+", "", text).strip()
 
 

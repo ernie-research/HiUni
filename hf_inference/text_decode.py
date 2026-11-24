@@ -119,9 +119,9 @@ def filter_logits(logits, temperature, top_k, top_p, generator):
 
 
 def split_answer(text):
-    """Drop a leading ``<think>...</think>`` block; keep the text when it is unclosed."""
+    """Keep only the text after the last ``</think>``; keep the text when it is unclosed."""
     if THINK_END in text:
-        text = text.split(THINK_END, 1)[1]
+        text = text.rsplit(THINK_END, 1)[1]
     return re.sub(r"^\s+", "", text).strip()
 
 
