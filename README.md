@@ -112,13 +112,15 @@ variables of the same scripts; see [`hf_inference/README.md`](hf_inference/READM
 
 HiUni also runs natively in [DiffSynth-Studio](https://github.com/modelscope/DiffSynth-Studio)
 and [vLLM-Omni](https://github.com/vllm-project/vllm-omni). In both, one checkpoint
-(`ernie-research/HiUni`) serves image understanding, generation and editing. Support is on
-the `hiuni` branch of our forks until it is merged upstream.
+(`ernie-research/HiUni`) serves image understanding, generation and editing.
 
 #### DiffSynth-Studio
 
+HiUni support is merged into the DiffSynth-Studio `main` branch and is not in a PyPI release
+yet, so install from source:
+
 ```bash
-git clone -b hiuni https://github.com/591582523h/DiffSynth-Studio.git
+git clone https://github.com/modelscope/DiffSynth-Studio.git
 cd DiffSynth-Studio && pip install -e .
 ```
 
@@ -150,9 +152,14 @@ print(pipe.chat("Explain flow matching briefly.", think_mode="empty"))
 ```
 
 All parameters are listed in
-[`docs/en/Model_Details/HiUni.md`](https://github.com/591582523h/DiffSynth-Studio/blob/hiuni/docs/en/Model_Details/HiUni.md).
+[`docs/en/Model_Details/HiUni.md`](https://github.com/modelscope/DiffSynth-Studio/blob/main/docs/en/Model_Details/HiUni.md).
+Training scripts (full and LoRA) are in
+[`examples/hiuni/`](https://github.com/modelscope/DiffSynth-Studio/tree/main/examples/hiuni).
 
 #### vLLM-Omni
+
+Support is on the `hiuni` branch of our fork until
+[vllm-project/vllm-omni#11080](https://github.com/vllm-project/vllm-omni/pull/11080) is merged.
 
 ```bash
 uv pip install vllm==0.34.0 --torch-backend=cu130
